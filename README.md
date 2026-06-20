@@ -19,7 +19,7 @@ A full-stack application that allows users to upload CSV/JSON datasets, apply dy
 ## Project Structure
 
 ```
-mini-data-platform/
+DataForge-platform/
 ├── backend/
 │   ├── src/
 │   │   ├── config/
