@@ -1,0 +1,108 @@
+<div class="page">
+
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Datasets</h1>
+            <p class="page-subtitle">
+                Upload CSV or JSON files to start querying and transforming your data.
+            </p>
+        </div>
+
+        <button class="btn btn-primary" (click)="showUpload = !showUpload">
+            {{ showUpload ? '✕ Cancel' : '+ Upload Dataset' }}
+        </button>
+    </div>
+
+    <!-- Upload Panel -->
+    <div class="upload-panel" *ngIf="showUpload">
+
+        <h2 class="panel-title">Upload New Dataset</h2>
+
+        <div class="drop-zone" [class.drag-over]="isDragging" (dragover)="onDragOver($event)"
+            (dragleave)="isDragging = false" (drop)="onDrop($event)" (click)="fileInput.click()">
+            <input #fileInput type="file" accept=".csv,.json" hidden (change)="onFileSelected($event)" />
+
+            <div *ngIf="selectedFile; else emptyDrop">
+                <div class="file-selected">
+                    <span class="file-icon">📄</span>
+                    <span class="file-name">{{ selectedFile.name }}</span>
+                    <span class="file-size">{{ formatSize(selectedFile.size) }}</span>
+                </div>
+            </div>
+
+            <ng-template #emptyDrop>
+                <div class="drop-hint">
+                    <span class="drop-icon">⬆</span>
+                    <p>Drag & drop CSV or JSON file here</p>
+                    <span class="drop-sub">Max file size: 50MB</span>
+                </div>
+            </ng-template>
+        </div>
+
+        <div class="upload-form">
+            <input class="form-input" [(ngModel)]="datasetName" placeholder="Dataset name (optional)" />
+
+            <button class="btn btn-primary" [disabled]="!selectedFile || uploading()" (click)="upload()">
+                {{ uploading() ? 'Uploading...' : 'Upload' }}
+            </button>
+        </div>
+
+        <p class="error" *ngIf="uploadError()">{{ uploadError() }}</p>
+        <p class="success" *ngIf="uploadSuccess()">{{ uploadSuccess() }}</p>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" *ngIf="loading()">Loading datasets...</div>
+
+    <!-- Empty -->
+    <div class="empty" *ngIf="!loading() && datasets().length === 0">
+        No datasets found. Upload your first file.
+    </div>
+
+    <!-- Grid -->
+    <div class="grid" *ngIf="!loading() && datasets().length">
+
+        <div class="card" *ngFor="let ds of datasets(); trackBy: trackById" [class.error]="ds.status === 'error'">
+
+            <div class="card-top">
+                <span class="badge">{{ ds.fileType }}</span>
+                <span class="status" [class]="ds.status"></span>
+            </div>
+
+            <h3 class="title">{{ ds.name }}</h3>
+            <p class="meta">{{ ds.originalFilename }}</p>
+
+            <div class="stats">
+                <div *ngIf="ds.status === 'ready'">
+                    <span>{{ ds.rowCount | number }}</span>
+                    <small>rows</small>
+                </div>
+                <div *ngIf="ds.status === 'ready'">
+                    <span>{{ columnCount(ds) }}</span>
+                    <small>columns</small>
+                </div>
+
+                <div *ngIf="ds.status === 'processing'" class="processing">
+                    Processing...
+                </div>
+
+                <div *ngIf="ds.status === 'error'" class="error-text">
+                    Error
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary btn-sm" *ngIf="ds.status === 'ready'" (click)="openQuery(ds.id)">
+                    Query
+                </button>
+
+                <button class="btn btn-danger btn-sm" (click)="deleteDataset(ds.id)">
+                    Delete
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+</div>

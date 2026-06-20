@@ -1,0 +1,240 @@
+<div class="qb-page">
+
+    <!-- HEADER -->
+    <div class="qb-header">
+
+        <button class="back-btn" (click)="router.navigate(['/datasets'])">
+            ← Back
+        </button>
+
+        <div>
+            <h1 class="qb-title">Query Builder</h1>
+
+            <p class="qb-sub" *ngIf="datasetName()">
+                {{ datasetName() }} · {{ rowCount() | number }} rows ·
+                {{ columns().length }} columns
+            </p>
+        </div>
+
+    </div>
+
+    <div class="qb-layout">
+
+        <!-- LEFT CONTROLS -->
+        <aside class="qb-controls">
+
+            <!-- FILTERS -->
+            <section class="ctrl-section">
+
+                <div class="section-head">
+                    <h3>Filters</h3>
+                    <button class="add-btn" (click)="addFilter()">+ Add</button>
+                </div>
+
+                <div *ngFor="let f of filters(); let i = index" class="filter-row">
+
+                    <select class="ctrl-select" [(ngModel)]="f.field">
+                        <option value="">Select</option>
+                        <option *ngFor="let col of columns()" [value]="col.name">
+                            {{ col.originalName }}
+                        </option>
+                    </select>
+
+                    <select class="ctrl-select">
+                        <option value="=">=</option>
+                        <option value="!=">≠</option>
+                        <option value=">">></option>
+                        <option value="<">
+                            << /option>
+                        <option value=">=">≥</option>
+                        <option value="<=">≤</option>
+                        <option value="LIKE">LIKE</option>
+                    </select>
+
+                    <input class="ctrl-input" [(ngModel)]="f.value" placeholder="Value" />
+
+                    <button class="remove-btn" (click)="removeFilter(i)">✕</button>
+
+                </div>
+
+                <p class="empty-hint" *ngIf="filters().length === 0">
+                    No filters added
+                </p>
+
+            </section>
+
+            <!-- GROUP BY -->
+            <section class="ctrl-section">
+
+                <div class="section-head">
+                    <h3>Group By</h3>
+                    <button class="add-btn" (click)="addGroupBy()">+ Add</button>
+                </div>
+
+                <div *ngFor="let g of groupBys(); let i = index" class="filter-row">
+
+                    <select class="ctrl-select" [ngModel]="groupBys()[i]" (ngModelChange)="updateGroupBy(i, $event)">
+
+                        <option value="">Select Column</option>
+
+                        <option *ngFor="let col of columns()" [value]="col.name">
+                            {{ col.originalName }}
+                        </option>
+
+                    </select>
+
+                    <button class="remove-btn" (click)="removeGroupBy(i)">✕</button>
+
+                </div>
+
+            </section>
+
+            <!-- AGGREGATIONS -->
+            <section class="ctrl-section">
+
+                <div class="section-head">
+                    <h3>Aggregations</h3>
+                    <button class="add-btn" (click)="addAggregation()">+ Add</button>
+                </div>
+
+                <div *ngFor="let agg of aggregations(); let i = index" class="agg-row">
+
+                    <select class="ctrl-select" [(ngModel)]="agg.function">
+                        <option value="count">COUNT</option>
+                        <option value="sum">SUM</option>
+                        <option value="avg">AVG</option>
+                        <option value="min">MIN</option>
+                        <option value="max">MAX</option>
+                    </select>
+
+                    <select class="ctrl-select" [(ngModel)]="agg.field">
+                        <option value="*">All Columns</option>
+
+                        <option *ngFor="let col of numericColumns()" [value]="col.name">
+                            {{ col.originalName }}
+                        </option>
+
+                    </select>
+
+                    <input class="ctrl-input" [(ngModel)]="agg.alias" placeholder="Alias" />
+
+                    <button class="remove-btn" (click)="removeAggregation(i)">✕</button>
+
+                </div>
+
+            </section>
+
+            <!-- ORDER BY -->
+            <section class="ctrl-section">
+
+                <div class="section-head">
+                    <h3>Order By</h3>
+                    <button class="add-btn" (click)="addOrderBy()">+ Add</button>
+                </div>
+
+                <div *ngFor="let o of orderBys(); let i = index" class="filter-row">
+
+                    <select class="ctrl-select" [(ngModel)]="o.field">
+                        <option value="">Select Column</option>
+
+                        <option *ngFor="let col of columns()" [value]="col.name">
+                            {{ col.originalName }}
+                        </option>
+
+                    </select>
+
+                    <select class="ctrl-select" [(ngModel)]="o.direction">
+                        <option value="ASC">ASC</option>
+                        <option value="DESC">DESC</option>
+                    </select>
+
+                    <button class="remove-btn" (click)="removeOrderBy(i)">✕</button>
+
+                </div>
+
+            </section>
+
+            <!-- LIMIT -->
+            <section class="ctrl-section">
+
+                <h3>Limit</h3>
+
+                <select class="ctrl-select full-width" [(ngModel)]="limit">
+                    <option value="100">100 Rows</option>
+                    <option value="500">500 Rows</option>
+                    <option value="1000">1000 Rows</option>
+                    <option value="5000">5000 Rows</option>
+                </select>
+
+            </section>
+
+            <!-- ACTIONS -->
+            <button class="run-btn" (click)="runQuery()" [disabled]="running()">
+                {{ running() ? 'Running...' : 'Run Query' }}
+            </button>
+
+            <button class="reset-btn" (click)="resetAll()">
+                Reset
+            </button>
+
+        </aside>
+
+        <!-- RIGHT RESULTS -->
+        <main class="qb-results">
+
+            <div class="alert-error" *ngIf="queryError()">
+                {{ queryError() }}
+            </div>
+
+            <div class="results-empty" *ngIf="!result() && !running()">
+                <h3>Configure your query</h3>
+                <p>Add filters and click Run Query</p>
+            </div>
+
+            <div class="results-empty" *ngIf="running()">
+                <div class="spinner"></div>
+                <p>Executing query...</p>
+            </div>
+
+            <div *ngIf="result() && !running()">
+
+                <div class="results-meta">
+                    <span class="results-count">
+                        {{ result()!.pagination.total | number }} Rows
+                    </span>
+
+                    <button class="export-btn" (click)="exportCsv()">
+                        Export CSV
+                    </button>
+                </div>
+
+                <div class="table-wrap">
+
+                    <table class="results-table">
+
+                        <thead>
+                            <tr>
+                                <th *ngFor="let col of resultColumns()" (click)="sortByCol(col)">
+                                    {{ col }}
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr *ngFor="let row of result()!.data">
+                                <td *ngFor="let col of resultColumns()">
+                                    {{ stringify(row[col]) }}
+                                </td>
+                            </tr>
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+</div>
